@@ -15,9 +15,11 @@ defmodule Mastermind.Game do
     |> Enum.count(fn {a, b} -> a == b end)
   end
 
-  def colors do
-    ~w[R G B Y O D]
+  def color_mapping do
+    %{"R" => 1, "G" => 2, "B" => 3, "Y" => 4, "O" => 5, "D" => 6}
   end
+
+  def colors, do: 1..6
 
   def won?(%__MODULE__{sequence: sequence, correct_position: correct}) do
     length(sequence) == correct
@@ -25,6 +27,11 @@ defmodule Mastermind.Game do
 
   def is_game_over?(state = %__MODULE__{guesses: guesses}) do
     won?(state) or guesses == 0
+  end
+
+  def print_score(number, suffix) do
+    plural = if number > 1, do: "s were", else: " was"
+    IO.puts "#{number} color#{plural} correct #{suffix}"
   end
 
   def new do
@@ -41,7 +48,7 @@ defmodule Mastermind.Game do
     correct_position = count_correct_guesses(guess, game.sequence)
     %{ game |
       correct_position: correct_position,
-      same_color: same_color,
+      same_color: same_color - correct_position,
       guesses: game.guesses-1
     }
   end

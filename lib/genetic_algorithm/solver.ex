@@ -1,4 +1,5 @@
 defmodule GeneticAlgorithm.Solver do
+  alias Mastermind.Game
   def color_length(), do: 6
   def genome_length(), do: 4
 
@@ -139,32 +140,40 @@ defmodule GeneticAlgorithm.Solver do
     Enum.find(eligibles, fn eligible -> eligible not in guess_codes end)
   end
 
-  def play_loop(result, pop_size, sequence, generations, guesses) when result != {4,0} do
-    eligibles = genetic_evolution(pop_size, generations, guesses)
-    IO.puts "Eligibles #{inspect eligibles}"
+  def play_loop(game, guesses) do
+    cond do
+      Game.won?(game) -> IO.puts("Genetic Algorithm guessed it right!")
+      Game.is_game_over?(game) -> IO.puts("Genetic Algorithm, sorry, game is over!")
+      true ->
+        eligibles = genetic_evolution(max_population_size(), max_generations(), guesses)
 
-    guess_codes = Enum.map(guesses, fn {code, _} -> code end)
-    code = get_first_valid_eligible(eligibles, guess_codes)
-    result = check_play(code, sequence)
-    if result == {4,0} do
-      IO.puts("You won!")
-      IO.puts "#{inspect code}, #{inspect result}"
-    else
-      play_loop(result, pop_size, sequence, generations, [{code, result}|guesses])
+        guess_codes = Enum.map(guesses, fn {code, _} -> code end)
+        code = get_first_valid_eligible(eligibles, guess_codes)
+
+        if code == nil do
+          play_loop(game, guesses)
+        else
+          IO.puts "Genetic Algorithm guesses : #{inspect code}"
+          new_game = Game.make_move(game, code)
+          result = {new_game.correct_position, new_game.same_color}
+
+          Game.print_score(new_game.same_color, "but in the wrong position")
+          Game.print_score(new_game.correct_position, "and in the correct position")
+          play_loop(new_game, [{code, result}|guesses])
+        end
     end
   end
 
-  def play_loop(_, _, _, _, guesses) do
-    guesses
-  end
-
   def play() do
-    sequence = generate_random_genome()
-    IO.puts "Sequence we are guessing : #{inspect sequence}"
-    first_guess = generate_random_genome()
-    initial_result = check_play(first_guess, sequence)
+    game = Game.new
 
+    IO.puts "Sequence we are guessing : #{inspect game.sequence}"
+    first_guess = generate_random_genome()
+    IO.puts "Genetic Algorithm guesses : #{inspect first_guess}"
+
+    new_game = Game.make_move(game, first_guess)
+    initial_result = {new_game.correct_position, new_game.same_color}
     guesses=[{first_guess, initial_result}]
-    play_loop(initial_result, max_population_size(), sequence, max_generations(), guesses)
+    play_loop(new_game, guesses)
   end
 end
